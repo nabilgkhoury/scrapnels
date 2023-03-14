@@ -1,0 +1,4 @@
+#!/bin/sh
+cmd="$@"
+exec scrapnels/cli.py $cmd
+

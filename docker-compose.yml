@@ -1,0 +1,38 @@
+version: "3.3"
+services:
+  postgres:
+    image: postgres:12.9
+    container_name: "postgres"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    shm_size: 10gb
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - '${POSTGRES_PORT}:${POSTGRES_PORT}'
+    volumes:
+      - ${SHARE_PATH}/postgres129:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - postgres-net
+
+  scrapnels:
+    build:
+      dockerfile: Dockerfile
+    container_name: scrapnels
+    volumes:
+      - ${SHARE_PATH}/scrapnels:${OUTPUT_PATH}
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - OUTPUT_PATH=${OUTPUT_PATH}
+    networks:
+      - postgres-net
+
+networks:
+  postgres-net:
+    driver: bridge

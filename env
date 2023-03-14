@@ -1,0 +1,6 @@
+POSTGRES_HOST=postgres  # name of postgres container
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+SHARE_PATH=/tmp  # share path on docker host
+OUTPUT_PATH=/tmp/scrapnels  # output path on docker guest
