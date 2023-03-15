@@ -67,7 +67,6 @@ class MuseumStat:
 
 @dataclass
 class CityStat:
-    populationByCity = {}  # class cache
     city: str  # unique city name/last fragment of wiki url (ex: 'Paris')
     population: int  # city population based on most recent stats
 
@@ -104,8 +103,6 @@ class CityStat:
                 pop_value = None
                 logger.warning(f"failed to scrape {city_url}: {exc}")
 
-        # cache population
-        cls.populationByCity[city_key] = pop_value
         logger.debug(f"{city_pretty} population = {pop_value}")
         return CityStat(city=city_key, population=pop_value)
 
