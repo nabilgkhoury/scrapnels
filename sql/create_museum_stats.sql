@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS museum_stats CASCADE;
-CREATE TABLE museum_stats
+CREATE TABLE IF NOT EXISTS museum_stats
 (
     museum VARCHAR(256) NOT NULL,
     city   VARCHAR(128) NOT NULL,

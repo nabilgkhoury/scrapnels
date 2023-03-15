@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 # constants
 MUSEUMS_URL = "https://en.wikipedia.org/wiki/List_of_most-visited_museums"
-RECREATE_CITY_STATS = open('sql/recreate_city_stats.sql', 'r').read()
-RECREATE_MUSEUM_STATS = open('sql/recreate_museum_stats.sql', 'r').read()
+CREATE_CITY_STATS = open('sql/create_city_stats.sql', 'r').read()
+CREATE_MUSEUM_STATS = open('sql/create_museum_stats.sql', 'r').read()
 SELECT_POPULATIONS_VISITS = open('sql/select_populations_visits.sql', 'r').read()
 
 
@@ -55,7 +55,7 @@ class MuseumStat:
                            in yearly_table.select("tr > td:nth-of-type(3)")]
             logger.debug(f"scraped yearly museum visits: {visit_stats}")
 
-            # TODO: replace assert with warning log message
+            # TODO: replace assert with error log message
             assert len(museums) == len(cities) == len(visit_stats), \
                    "scraped entities must match in number!"
 
@@ -89,7 +89,7 @@ class CityStat:
         # if tr.th has a sibling td, we use it. Otherwise use td under sibling of tr
         pop_header_tr_td = pop_header_tr.th.find_next_sibling()
         if pop_header_tr_td:
-            pop_value_str = pop_header_tr_td.find(text=True).strip()
+            pop_value_str = pop_header_tr_td.find(string=True).strip()
             try:
                 pop_value = int(pop_value_str.split(' ', 1)[0].replace(',', ''))
             except ValueError as exc:
@@ -97,7 +97,7 @@ class CityStat:
                 logger.warning(f"failed to scrape {city_url}: {exc}")
         else:
             pop_value_tr = pop_header_tr.find_next_sibling()
-            pop_value_str = pop_value_tr.td.find(text=True).strip()
+            pop_value_str = pop_value_tr.td.find(string=True).strip()
             try:
                 pop_value = int(pop_value_str.split(' ', 1)[0].replace(',', ''))
             except ValueError as exc:
@@ -113,37 +113,47 @@ class CityStat:
 def scrape_museum_visits(sql_uri: str):
     logger.info(f"scraping museum visits...")
     # TODO: handle failed connections with logging
-    sql_connection = psycopg.connect(sql_uri, autocommit=False)
+    sql_connection = psycopg.connect(sql_uri, autocommit=True)
     sql_cursor = sql_connection.cursor()
 
-    # recreate relevant SQL tables
-    sql_cursor.execute(RECREATE_CITY_STATS)
-    sql_cursor.execute(RECREATE_MUSEUM_STATS)
-    logger.info(f"recreated related SQL tables")
+    # create relevant SQL tables if not already done
+    sql_cursor.execute(CREATE_CITY_STATS)
+    sql_cursor.execute(CREATE_MUSEUM_STATS)
+    logger.info(f"created missing related SQL tables")
 
     # scrape and insert museum visit stats and local population
-    inserted_cities = 0
-    inserted_museums = 0
+    upserted_cities = 0
+    upserted_museums = 0
     for museum_stat in MuseumStat.scrape():
-        if museum_stat.city not in CityStat.populationByCity:
-            # Scrape City Population, but only if not found
+        # check if city population is known
+        sql_cursor.execute('SELECT TRUE '
+                           'FROM city_stats '
+                           'WHERE city=%s AND population IS NOT NULL',
+                           (museum_stat.city,))
+        if not sql_cursor.fetchone():
+            # city population unknown, scrape it
             city_stat = CityStat.scrape(museum_stat.city)
-            sql_cursor.execute('INSERT INTO city_stats VALUES(%s, %s)',
+            sql_cursor.execute('INSERT INTO city_stats '
+                               'VALUES(%s, %s) '
+                               'ON CONFLICT (city) DO UPDATE '
+                               'SET population = EXCLUDED.population',
                                (city_stat.city, city_stat.population))
-            inserted_cities += 1
-            logger.debug(f"inserted {city_stat}")
+            upserted_cities += 1
+            logger.debug(f"upserted {city_stat} city-stats")
 
-        sql_cursor.execute('INSERT INTO museum_stats VALUES(%s, %s, %s, %s)',
+        sql_cursor.execute('INSERT INTO museum_stats '
+                           'VALUES(%s, %s, %s, %s) '
+                           'ON CONFLICT (museum, city, year) DO UPDATE '
+                           'SET visits = EXCLUDED.visits',
                            (museum_stat.museum,
                             museum_stat.city,
                             museum_stat.year,
                             museum_stat.visits))
-        inserted_museums += 1
-        logger.debug(f"inserted {museum_stat}")
+        upserted_museums += 1
+        logger.debug(f"upserted {museum_stat} museum stats")
 
-    logger.info(f"inserted {inserted_cities} cites and {inserted_museums} museums")
-    # commit changes and close db connection
-    sql_connection.commit()
+    logger.info(f"upserted {upserted_cities} cites and {upserted_museums} museums")
+    # close db connection
     sql_cursor.close()
     sql_connection.close()
 
