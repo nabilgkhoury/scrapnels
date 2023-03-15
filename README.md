@@ -5,23 +5,29 @@ dev$ git clone https://github.com/nabilgkhoury/scrapnels.git
 dev$ cd scrapnels
 ```
 
-### Dot-Env File:
+## 1. Editing Dot-Env File:
 copy `scrapnels/env` to `scrapnels/.env` and edit as per your system. 
 pay close attention to `SHARE_PATH`. This is where the demo figure will be saved.
-### Docker Suite Launch:
-- start docker daemon as per your system
-- launch docker suite
+
+## 2. Launching Docker Suite:
+### 2.1. start docker daemon
+as per your system
+### 2.2. launch docker suite:
 ```shell
 scrapnels$ make all
 ```
+**TIP:** `make all` can be broken down into two steps:
+- `make build`, which builds docker images: `postgres:12.9` and `scrapnels-scrapnels`
+- `make run`, which creates the corresponding docker containers: `postgres` and `scrapnels`.
 
-### Scrapnels Usage:
-- ssh to `scrapnels` container:
+## 3. Using Scrapnels:
+### 3.1 ssh to `scrapnels` container
 ```shell
 scrapnels$ docker exec -it scrapnels /bin/bash
 root@scrapnels#
 ```
-- run `scrapnels-cli` help:
+
+### 3.2 view `scrapnels-cli` help
 ```shell
 root@scrapnels# scrapnels-cli --help
 usage: 
@@ -39,6 +45,10 @@ subcommands:
   valid scrapnels subcommands
 
   {demo}         additional help
+```
+
+### 3.3 view `scrapnels-cli demo` help
+```shell
 root@scrapnels# scrapnels-cli demo --help
 usage: 
 scrapnels-cli demo -h
@@ -53,7 +63,11 @@ options:
   -o OUTPUT, --output OUTPUT
                         output path on local file system (default: /tmp/scrapnels)
 ```
-- run the demo without arguments. `--sql` and `--output` arguments are optional and will default to dot-env file.
+`--sql` and `--output` command line arguments are optional.
+their respective default values are determined based on the dot-env file.  
+
+### 3.4 run demo `scrapnels-cli demo`
+run the demo without arguments:
 ```shell
 root@scrapnels# scrapnels-cli demo
 INFO - scraping museum visits...
@@ -71,9 +85,12 @@ INFO - loaded 48 data points
 INFO - training linear regression model...
 INFO - saved figure /tmp/scrapnels/city-populations-museum-visits.png
 ```
-note the path where the figure was saved. 
-based on our docker volume setup, the figure path exists on docker host too.
-- examine `scrapnels` logs:
+**TIP:** note the path where the figure was saved. 
+
+Based on our docker volume setup, the figure path exists on docker host too.
+
+### 3.5 examine logs and view output:
+#### 3.5.1 examine logs
 ```shell
 root@scrapnels# ls -ltra /var/log/scrapnels
 drwxr-xr-x 1 root root  4096 Mar 14 12:30 ..
@@ -85,9 +102,31 @@ you'll find a demo-specific log `museum-visits.log`.
 `museum_visits.log` gets replaced every time the demo is run 
 while `scrapnels.log` is a rotating log that gets appended to.
 
-- access output:
-    - close ssh session (ex: `CTRL-D`)
-    - open the generated figure:
+#### 3.5.2 view output
+- close ssh session (ex: `CTRL-D`)
+- open the generated figure:
 ```shell
 open /tmp/scrapnels/city-populations-museum-visits.png
+```
+
+### 3.6 cleaning up after demo
+To clean up all related docker artefacts once done with the demo:
+```shell
+scrapnels$ make clean
+```
+
+**TIP:** To list all `make` options:
+```shell
+scrapnels$ make help
+help                           list make targets
+all                            stop, build, create and start
+stop                           stop related docker containers
+clean                          stop related docker containers and clean related docker containers and images
+rebuild                        clean and build related docker images
+build                          build related docker images
+create                         create related docker containers
+start                          start related docker containers
+restart                        restart related docker containers
+run                            run related docker containers
+kill                           kill related docker containers
 ```

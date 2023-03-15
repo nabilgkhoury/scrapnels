@@ -1,4 +1,4 @@
-IMAGE := scrapnels-image
+IMAGE := scrapnels-scrapnels
 CONTAINER := scrapnels
 TAG := latest
 

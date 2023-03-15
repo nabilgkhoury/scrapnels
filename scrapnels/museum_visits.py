@@ -22,14 +22,14 @@ SELECT_POPULATIONS_VISITS = open('sql/select_populations_visits.sql', 'r').read(
 
 
 @dataclass
-class MuseumVisitStat:
+class MuseumStat:
     museum: str  # museum name (ex: 'Louvre')
     city: str  # unique city name/last fragment of wiki url (ex: 'Paris')
     year: int  # year visited (ex: 2022)
     visits: int  # number of visits that year
 
     @classmethod
-    def scrape(cls) -> typing.Generator['MuseumVisitStat', None, None]:
+    def scrape(cls) -> typing.Generator['MuseumStat', None, None]:
         museums_html = requests.get(MUSEUMS_URL).content
         museums_soup = BeautifulSoup(museums_html, 'html.parser')
         yearly_tables = museums_soup.find_all('table', class_='wikitable')
@@ -60,7 +60,7 @@ class MuseumVisitStat:
                    "scraped entities must match in number!"
 
             for museum, city, visits in zip(museums, cities, visit_stats):
-                yearly_visits = MuseumVisitStat(museum, city, year, visits)
+                yearly_visits = MuseumStat(museum, city, year, visits)
                 logger.debug(f"generated {yearly_visits}")
                 yield yearly_visits
 
@@ -124,7 +124,7 @@ def scrape_museum_visits(sql_uri: str):
     # scrape and insert museum visit stats and local population
     inserted_cities = 0
     inserted_museums = 0
-    for museum_stat in MuseumVisitStat.scrape():
+    for museum_stat in MuseumStat.scrape():
         if museum_stat.city not in CityStat.populationByCity:
             # Scrape City Population, but only if not found
             city_stat = CityStat.scrape(museum_stat.city)

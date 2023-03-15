@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(
     prog='scrapnels',
-    description=f'Scrapnels (v{package_version})',
+    description=f'Scrapnels web-scraping cli (v{package_version})',
     usage=f"{os.linesep}scrapnels-cli -h"
           f"{os.linesep}scrapnels-cli -v"
           f"{os.linesep}scrapnels-cli demo -h"
