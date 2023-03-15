@@ -8,6 +8,18 @@ dev$ cd scrapnels
 ## 1. Editing Dot-Env File:
 copy `scrapnels/env` to `scrapnels/.env` and edit as per your system. 
 pay close attention to `SHARE_PATH`. This is where the demo figure will be saved.
+```shell
+# example '.env' file for *nix-compatible hosts
+POSTGRES_HOST=postgres  # name of postgres container
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+SHARE_PATH=/tmp  # share path on docker host
+OUTPUT_PATH=/tmp/scrapnels  # output path on docker guest
+```
+**NOTE:** `.env` file is consumed by:
+- docker via `docker-compose.yml`
+- scrapnels-cli code (`scrapnels/cli.py`) via `dotenv` package
 
 ## 2. Launching Docker Suite:
 ### 2.1. start docker daemon
@@ -18,16 +30,17 @@ scrapnels$ make all
 ```
 **TIP:** `make all` can be broken down into two steps:
 - `make build`, which builds docker images: `postgres:12.9` and `scrapnels-scrapnels`
-- `make run`, which creates the corresponding docker containers: `postgres` and `scrapnels`.
+- `make run`, which creates the corresponding docker containers:
+  `postgres` and `scrapnels` then starts them.
 
 ## 3. Using Scrapnels:
-### 3.1 ssh to `scrapnels` container
+### 3.1. ssh to `scrapnels` container
 ```shell
 scrapnels$ docker exec -it scrapnels /bin/bash
 root@scrapnels#
 ```
 
-### 3.2 view `scrapnels-cli` help
+### 3.2. view `scrapnels-cli` help
 ```shell
 root@scrapnels# scrapnels-cli --help
 usage: 
@@ -47,7 +60,7 @@ subcommands:
   {demo}         additional help
 ```
 
-### 3.3 view `scrapnels-cli demo` help
+### 3.3. view `scrapnels-cli demo` help
 ```shell
 root@scrapnels# scrapnels-cli demo --help
 usage: 
@@ -59,15 +72,29 @@ scrape museum visits and local population then correlate them
 
 options:
   -h, --help            show this help message and exit
-  -s SQL, --sql SQL     sql connection uri (default: user=postgres password=postgres host=localhost port=5432)
+  -s SQL, --sql SQL     sql connection uri (default: user=postgres password=postgres host=postgres port=5432)
   -o OUTPUT, --output OUTPUT
                         output path on local file system (default: /tmp/scrapnels)
 ```
 `--sql` and `--output` command line arguments are optional.
 their respective default values are determined based on the dot-env file.  
 
-### 3.4 run demo `scrapnels-cli demo`
-run the demo without arguments:
+### 3.4. run demo `scrapnels-cli demo`
+#### 3.4.1. run unit-tests
+```shell
+scrapnels$ python -m unittest -v
+test_museum_stats_2019 (test.test_museum_visits.MuseumVisitsTestCase.test_museum_stats_2019) ... ok
+test_museum_stats_2020 (test.test_museum_visits.MuseumVisitsTestCase.test_museum_stats_2020) ... ok
+test_museum_stats_2021 (test.test_museum_visits.MuseumVisitsTestCase.test_museum_stats_2021) ... ok
+test_museum_stats_2022 (test.test_museum_visits.MuseumVisitsTestCase.test_museum_stats_2022) ... ok
+test_paris_city_stat (test.test_museum_visits.MuseumVisitsTestCase.test_paris_city_stat) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.994s
+
+OK
+```
+#### 3.4.2. run the demo without arguments:
 ```shell
 root@scrapnels# scrapnels-cli demo
 INFO - scraping museum visits...
@@ -89,8 +116,8 @@ INFO - saved figure /tmp/scrapnels/city-populations-museum-visits.png
 
 Based on our docker volume setup, the figure path exists on docker host too.
 
-### 3.5 examine logs and view output:
-#### 3.5.1 examine logs
+### 3.5. examine logs and view output:
+#### 3.5.1. examine logs
 ```shell
 root@scrapnels# ls -ltra /var/log/scrapnels
 drwxr-xr-x 1 root root  4096 Mar 14 12:30 ..
@@ -102,14 +129,14 @@ you'll find a demo-specific log `museum-visits.log`.
 `museum_visits.log` gets replaced every time the demo is run 
 while `scrapnels.log` is a rotating log that gets appended to.
 
-#### 3.5.2 view output
+#### 3.5.2. view output
 - close ssh session (ex: `CTRL-D`)
 - open the generated figure:
 ```shell
 open /tmp/scrapnels/city-populations-museum-visits.png
 ```
 
-### 3.6 cleaning up after demo
+## 4. Cleaning up After Demo
 To clean up all related docker artefacts once done with the demo:
 ```shell
 scrapnels$ make clean
